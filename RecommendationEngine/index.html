@@ -1,0 +1,93 @@
+
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>brain.js tutorial</title>
+ </head>
+ <body onLoad="nextTry();">
+	<script src="https://unpkg.com/brain.js@1.1.2/browser.min.js"></script>
+	<script>
+		const color_red = 0;
+		const color_blue = 1;
+		const color_yellow = 2;
+		const color_nude = 3;
+		const color_brown = 4;
+		const color_lightbrown = 5;
+		const color_darkbrown = 6;
+		const color_white = 7;
+		const color_black = 8;
+		const color_gray = 9;
+		const color_green = 10;
+		
+		let trainingData = [
+			{ input: {color: color_red}, output: { wanted: 0 } }
+		];
+		let ratingItem;
+		let bestWanted = 0;
+
+		function nextTry(rating){	
+			document.getElementById('result').innerHTML = '';
+		
+			const network = new brain.NeuralNetwork();
+			network.train(trainingData);
+					
+			if(undefined !== ratingItem){
+				trainingData.push({ input: ratingItem, output: { wanted: rating / 4 } });
+			}
+			
+			let suggestionItemsText = '';
+			for(i=1;i<=20;i++){
+				suggestionItem = generateRandomItem();
+
+				suggestionItemsText += getFormattedItem(suggestionItem) + ' >> ' + JSON.stringify(network.run(suggestionItem)) + '<br/>';
+			}
+				
+			ratingItem = generateRandomItem();			
+			document.getElementById('result').innerHTML += 'Rate this:<br/>' + getFormattedItem(ratingItem) + '<br/><br/>Suggested items:<br/>' + suggestionItemsText; 			
+		}
+		
+		function generateRandomItem(){
+			colorValue = Math.floor((Math.random() * 10) + 1);
+			
+			return {
+				color: colorValue / 10
+			};
+		}
+		
+		function getFormattedItem(item){
+			var formattedItem = 'color: ' + getColorName(item.color);
+			return formattedItem;
+		}
+		
+		function getColorName(color){
+			var colorNumber = color * 10;
+			var colorName = 
+				color_red === colorNumber ? 'red' :
+				color_blue === colorNumber ? 'blue' :
+				color_yellow === colorNumber ? 'yellow' :
+				color_nude === colorNumber ? 'nude' :
+				color_brown === colorNumber ? 'brown' :
+				color_lightbrown === colorNumber ? 'lightbrown' :
+				color_darkbrown === colorNumber ? 'darkbrown' :
+				color_white === colorNumber ? 'white' :
+				color_black === colorNumber ? 'black' :
+				color_gray === colorNumber ? 'gray' :
+				color_green === colorNumber ? 'green' :
+				'';
+			return colorName;			
+		}
+	</script>
+	
+	<center>
+		<br/><br/><br/><br/><br/><br/><br/>
+		<input type="button" value="1" onClick="nextTry(0);"/> 
+		<input type="button" value="2" onClick="nextTry(1);"/> 
+		<input type="button" value="3" onClick="nextTry(2);"/> 
+		<input type="button" value="4" onClick="nextTry(3);"/> 
+		<input type="button" value="5" onClick="nextTry(4);"/> 		
+		<br/><br/>
+		<div id="result">
+		</div>
+	</center>
+ </body>
+</html>
