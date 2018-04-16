@@ -100,7 +100,7 @@
 		function getFormattedItem(item){
 			const trainingInformation = item.trainingInformation;
 			const formattedItem = 
-				'<img class="articleImage" src="' + item.displayingInformation.imageFile + '"/><br/>' + 
+				'<img class="articleImage" src="images/articles/' + item.displayingInformation.imageFile + '"/><br/>' + 
 				'color: ' + getColorName(trainingInformation.color) + '<br/>' +
 				'has printing?: ' + (1 === trainingInformation.hasPrinting ? 'yes' : 'no') + '<br/>' +
 				'neckline: ' + getNecklineName(trainingInformation.neckline) + '<br/>' +
