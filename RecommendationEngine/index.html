@@ -40,7 +40,10 @@
 		function nextTry(rating){	
 			document.getElementById('result').innerHTML = '';
 		
-			const network = new brain.NeuralNetwork();
+			const network = new brain.NeuralNetwork({
+				activation: 'sigmoid',
+				hiddenLayers: [4]
+			});
 			network.train(trainingData);
 					
 			if(undefined !== ratingItem){
