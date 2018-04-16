@@ -1,0 +1,68 @@
+
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>brain.js tutorial</title>
+ </head>
+ <body onLoad="predictFood(time_dusk);">
+	<script src="https://unpkg.com/brain.js@1.1.2/browser.min.js"></script>
+	<script src="itemsInStock.js"></script>
+	<script>
+		const time_dusk = 0.108; 		// 03:00
+		const time_morning = 0.216;		// 06:00
+		const time_noon = 0.432;		// 12:00
+		const time_afternoon = 0.576;	// 16:00
+		const time_evening = 0.720;		// 20:00
+		const time_night = 0.828;		// 23:00
+
+		const trainingData = [
+			{ input: { timeOfDay: time_dusk }, output: { burgers: 1, drinks: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_dusk }, output: { burgers: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_dusk }, output: { burgers: 1, drinks: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_dusk }, output: { drinks: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_dusk }, output: { drinks: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_dusk }, output: { drinks: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1, eggs: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1, eggs: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1, eggs: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1, eggs: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { buns: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { sandwich: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_morning }, output: { sandwich: 1 } },
+			{ input: { timeOfDay: time_noon }, output: { sandwich: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_noon }, output: { sandwich: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_noon }, output: { fries: 1, beer: 1 } },
+			{ input: { timeOfDay: time_noon }, output: { fries: 1, beer: 1 } },
+			{ input: { timeOfDay: time_noon }, output: { fries: 1, beer: 1 } },
+			{ input: { timeOfDay: time_noon }, output: { burgers: 1, coffee: 1 } },
+			{ input: { timeOfDay: time_noon }, output: { burgers: 1, coke: 1 } },
+		];
+
+		let network = new brain.NeuralNetwork();
+		network.train(trainingData);
+		
+		function predictFood(timeOfDayInSeconds){
+			document.getElementById('result').innerHTML = JSON.stringify(network.run({ timeOfDay: timeOfDayInSeconds }));
+		}
+	</script>
+	
+	<center>
+		<br/><br/><br/><br/><br/><br/><br/>
+		<input type="button" value="dusk" onClick="predictFood(time_dusk);"/> 
+		<input type="button" value="morning" onClick="predictFood(time_morning);"/> 
+		<input type="button" value="noon" onClick="predictFood(time_noon);"/> 
+		<input type="button" value="afternoon" onClick="predictFood(time_afternoon);"/> 
+		<input type="button" value="evening" onClick="predictFood(time_evening);"/> 		
+		<input type="button" value="night" onClick="predictFood(time_night);"/> 		
+		<br/><br/>
+		<div id="result">
+		</div>
+	</center>
+ </body>
+</html>
