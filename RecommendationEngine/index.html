@@ -3,31 +3,39 @@
 <html lang="en">
  <head>
   <title>brain.js tutorial</title>
+  <style>
+	.articleImage {
+		width:180px;
+	}
+  
+	.ratingItem {
+		padding-bottom: 30px;
+	}
+  
+	.suggestedItems {
+		display: flex;
+		flex-wrap: wrap;
+		width:650px;
+	}
+  
+	.suggestionItem {
+		padding-right:15px;
+		padding-top: 30px;
+	}
+  </style>
  </head>
  <body onLoad="nextTry();">
 	<script src="https://unpkg.com/brain.js@1.1.2/browser.min.js"></script>
+	<script src="itemsInStock.js"></script>
 	<script>
 		const color_normalization_factor = 100;
-		const color_black = 1;
-		const color_blue = 2;
-		const color_darkblue = 3;
-		
 		const neckline_normalization_factor = 10;
-		const neckline_round = 1;
-		
-		const price_normalization_factor = 100;
-		
-		const itemsInStock = [
-			{ trainingInformation: { color: color_black, neckline: neckline_round, price: 19.99 }, displayingInformation: { imageFile: 'cl_black_nl_circle_prc_1999.jpg' }	},
-			{ trainingInformation: { color: color_blue, neckline: neckline_round, price: 19.99 }, displayingInformation: { imageFile: 'cl_blue_nl_circle_prc_1999.jpg' } },			
-			{ trainingInformation: { color: color_darkblue, neckline: neckline_round, price: 29.99 }, displayingInformation: { imageFile: 'cl_darkblue_nl_circle_prc_2999.jpg' } },			
-		];
+		const price_normalization_factor = 100;	
 		
 		let trainingData = [
-			{ input: {color: color_black, neckline: neckline_round, price: 0.1999 }, output: { wanted: 0 } }
+			{ input: {color: color_black, hasPrinting: false, neckline: neckline_round, price: 0.1999 }, output: { wanted: 0 } }
 		];
 		let ratingItem;
-		let bestWanted = 0;
 
 		function nextTry(rating){	
 			document.getElementById('result').innerHTML = '';
@@ -42,20 +50,34 @@
 			let suggestionItemsText = '';
 			let suggestionItems = [];
 			for(i=0;i<itemsInStock.length;i++){
-				suggestionItems.push(getNormalizedItemFromStock(i));
+				let item = getNormalizedItemFromStock(i);
+				item.wanted = network.run(item.trainingInformation).wanted;
+				suggestionItems.push(item);
 			}
 			
 			suggestionItems.sort(function(a,b){
-				return network.run(b.trainingInformation).wanted - network.run(a.trainingInformation).wanted;
+				return b.wanted - a.wanted;
 			});
 			
 			for(i=0;i<suggestionItems.length;i++){
 				suggestionItem = suggestionItems[i];
-				suggestionItemsText += getFormattedItem(suggestionItem) + ' >> ' + JSON.stringify(network.run(suggestionItem.trainingInformation)) + '<br/>';
+				suggestionItemsText += 
+					'<div class="suggestionItem">' + 
+						getFormattedItem(suggestionItem) + ' <br/> ' + 
+						'wanted: ' + Math.round(suggestionItem.wanted * 100) + '%'
+					+ '</div>';
 			}
 			
 			ratingItem = getNormalizedItemFromStock(Math.floor((Math.random() * itemsInStock.length - 1) + 1));			
-			document.getElementById('result').innerHTML += 'Rate this:<br/>' + getFormattedItem(ratingItem) + '<br/><br/>Suggested items:<br/>' + suggestionItemsText; 			
+			document.getElementById('result').innerHTML += 
+				'<div class="ratingItem">' +
+					'Rate this:<br/>' + 
+					getFormattedItem(ratingItem) + '<br/>' +
+				'</div>' +
+				'Suggested items:<br/>' +
+				'<div class="suggestedItems">' + 
+					suggestionItemsText + 
+				'</div>';
 		}
 		
 		function getNormalizedItemFromStock(index){
@@ -64,6 +86,7 @@
 			return {
 				trainingInformation : {
 					color: trainingInformation.color / color_normalization_factor,
+					hasPrinting: trainingInformation.hasPrinting,
 					neckline: trainingInformation.neckline / neckline_normalization_factor,
 					price: trainingInformation.price / price_normalization_factor
 				},
@@ -74,10 +97,11 @@
 		function getFormattedItem(item){
 			const trainingInformation = item.trainingInformation;
 			const formattedItem = 
-				'<img src="' + item.displayingInformation.imageFile + '" width="200"/><br/>' + 
-				'color: ' + getColorName(trainingInformation.color) 
-				+ ' / neckline: ' + getNecklineName(trainingInformation.neckline)
-				+ ' / price: ' + (trainingInformation.price * price_normalization_factor) + ' &euro;';
+				'<img class="articleImage" src="' + item.displayingInformation.imageFile + '"/><br/>' + 
+				'color: ' + getColorName(trainingInformation.color) + '<br/>' +
+				'has printing?: ' + (1 === trainingInformation.hasPrinting ? 'yes' : 'no') + '<br/>' +
+				'neckline: ' + getNecklineName(trainingInformation.neckline) + '<br/>' +
+				'price: ' + ((Math.round((trainingInformation.price * price_normalization_factor) * 100)) / 100) + ' &euro;';
 			return formattedItem;
 		}
 		
@@ -87,6 +111,13 @@
 				color_black === id ? 'black' :
 				color_blue === id ? 'blue' :
 				color_darkblue === id ? 'dark blue' :
+				color_gray === id ? 'gray' :
+				color_green === id ? 'green' :
+				color_lightblue === id ? 'light blue' :
+				color_lightgreen === id ? 'light green' :
+				color_skin === id ? 'skin' :
+				color_turqoise === id ? 'turqoise' :
+				color_white === id ? 'white' :
 				'';
 			return name;			
 		}
@@ -95,6 +126,7 @@
 			var id = color * neckline_normalization_factor;
 			var name = 
 				neckline_round === id ? 'round' :
+				neckline_v === id ? 'v' :
 				'';
 			return name;			
 		}
