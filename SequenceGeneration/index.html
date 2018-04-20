@@ -1,0 +1,56 @@
+
+<!doctype html>
+<html lang="en">
+ <head>
+  <title>brain.js tutorial</title>
+ </head>
+ <body>
+	<script src="https://unpkg.com/brain.js@1.1.2/browser.min.js"></script>
+	<script src="trainingData.js"></script>
+	<script>
+		const network = new brain.NeuralNetwork();
+		
+		network.train(trainingData, { iterations: 1500 });
+		
+		let currentSequence = [0.10, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00];
+		let resultAsHTML = '';
+		
+		function predictNextSequence(){
+			const nextCharacter = network.run(currentSequence)[0];
+			currentSequence.push(nextCharacter);		
+
+			if (filler !== nextCharacter){
+				resultAsHTML = resultAsHTML + 
+					getActivityTextById(nextCharacter) +
+					((checkout === nextCharacter || activity_timeout === nextCharacter) ? '<br/>' : ', ')
+				;
+			}
+			
+			document.getElementById('result').innerHTML = resultAsHTML;			
+		}
+		
+		function getActivityTextById(activityId){
+			const activityText = 
+				startpage === activityId ? 'startpage' :
+				overview === activityId ? 'ov' :
+				overview_next_page === activityId ? 'ov next' :
+				overview_prev_page === activityId ? 'ov previous' :
+				spv === activityId ? 'spv' :
+				add_to_basket === activityId ? 'to basket' :
+				checkout === activityId ? 'checkout' :
+				activity_timeout === activityId ? 'no activity' :
+				'';
+				
+			return activityText;
+		}
+	</script>
+	
+	<center>
+		<br/><br/><br/><br/><br/><br/><br/>
+		<input type="button" value="next sequence" onClick="predictNextSequence();"/> 
+		<br/><br/>
+		<div id="result">
+		</div>
+	</center>
+ </body>
+</html>
