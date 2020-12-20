@@ -26,11 +26,60 @@ import visualize
 
 # 2-input XOR inputs and expected outputs.
 xor_inputs = [
-              (0.98, 0.60),
+              (0.10, 0.10),
+              (0.20, 0.10),
+              (0.30, 0.10),
+              (0.40, 0.10),
+              (0.50, 0.10),
+              (0.60, 0.10),
+              (0.70, 0.10),
+              (0.80, 0.10),
+              (0.90, 0.10),
+              (1.00, 0.10),
+
+              (0.10, 0.40),
+              (0.20, 0.40),
+              (0.30, 0.40),
+              (0.40, 0.40),
+              (0.50, 0.40),
+              (0.60, 0.40),
+              (0.70, 0.40),
+              (0.80, 0.40),
+              (0.90, 0.40),
+              (1.00, 0.40),
+
+              (0.10, 0.70),
+              (0.20, 0.70),
               (0.30, 0.70),
-              (0.79, 0.40),
+              (0.40, 0.70),
+              (0.50, 0.70),
+              (0.60, 0.70),
+              (0.70, 0.70),
+              (0.80, 0.70),
+              (0.90, 0.70),
+              (1.00, 0.70),
+
+              (0.10, 0.90),
+              (0.20, 0.90),
               (0.30, 0.90),
-              (0.90, 0.90)
+              (0.40, 0.90),
+              (0.50, 0.90),
+              (0.60, 0.90),
+              (0.70, 0.90),
+              (0.80, 0.90),
+              (0.90, 0.90),
+              (1.00, 0.90),
+
+              (0.10, 0.95),
+              (0.20, 0.95),
+              (0.30, 0.95),
+              (0.40, 0.95),
+              (0.50, 0.95),
+              (0.60, 0.95),
+              (0.70, 0.95),
+              (0.80, 0.95),
+              (0.90, 0.95),
+              (1.00, 0.95)
               ]
 xor_outputs = [
                (0.0,),
@@ -39,6 +88,69 @@ xor_outputs = [
                (0.0,)
                ]
 
+def get_phase_penalty(time_left_in_percent, prices_left_in_percent):
+    prices_won_in_percent = 100.0 - prices_left_in_percent
+
+    penalty = 25.0
+
+    if time_left_in_percent >= 93.2:
+      if prices_left_in_percent <= 85.2:
+        return penalty
+
+      return 0
+
+    if time_left_in_percent >= 56.0:
+      if prices_left_in_percent >= 95.9:
+        return penalty
+
+      if prices_left_in_percent <= 42.6:
+        return penalty
+
+      return 0
+
+    if time_left_in_percent >= 39.5:
+      if prices_left_in_percent >= 74.3:
+        return penalty
+
+      if prices_left_in_percent <= 38.6:
+        return penalty
+
+      return 0
+
+    if time_left_in_percent >= 26.3:
+      if prices_left_in_percent >= 64.3:
+        return penalty
+
+      if prices_left_in_percent <= 25.2:
+        return penalty
+
+      return 0
+
+    if time_left_in_percent >= 8.5:
+      if prices_left_in_percent >= 42.1:
+        return penalty
+
+      if prices_left_in_percent <= 7.8:
+        return penalty
+
+      return 0
+
+    if time_left_in_percent >= 4.25:
+      if prices_left_in_percent <= 14.9:
+        return penalty * 2
+
+      return 0
+
+    if time_left_in_percent >= 2.0:
+      if prices_left_in_percent <= 6.9:
+        return penalty * 3
+
+      return 0
+
+      if prices_left_in_percent <= 2.0:
+        return penalty * 3.5
+
+    return 0
 
 def eval_genome(genome, config):
     """
@@ -60,8 +172,8 @@ def eval_genome(genome, config):
     total_prices = 2000.0
     prices_left = 2000.0
 
-    fitness = 0.0
-    while time_left > 0 and prices_left > 0:
+    fitness = 90000.0
+    while fitness > 0 and time_left > 0 and prices_left > 0:
       time_left -= 1
       prices_left_in_percent = (prices_left * 100) / total_prices
       time_left_in_percent = (time_left * 100) / total_time
@@ -69,22 +181,15 @@ def eval_genome(genome, config):
 
       output = net.activate((time_passed_in_percent / 100, prices_left_in_percent / 100))
 
-      give_out_price = output[0] > 0.8
+      give_out_price = output[0] > 0.7
       prices_left -= (1 if give_out_price else 0)
       prices_left_in_percent = (prices_left * 100) / total_prices
 
-      multiplier = 1.0
+      penalty = 0.0
+      penalty += get_phase_penalty(time_left_in_percent, prices_left_in_percent)
 
-      if time_passed_in_percent <= 2.0 and not give_out_price:
-        multiplier += 1.0
+      fitness -= penalty
 
-      if time_passed_in_percent >= 50.0 and time_left_in_percent > 15.0 and prices_left_in_percent >= 20.0:
-        multiplier += 1.0
-
-      if time_left_in_percent <= 5.0 and prices_left_in_percent <= 5.0:
-        multiplier += 1.0
-
-      fitness += 1.0 * multiplier
 
     return fitness
 
@@ -103,9 +208,9 @@ def run(config_file):
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
 
-    # Run for up to 300 generations.
+    # Run for up to 150 generations.
     pe = neat.ParallelEvaluator(4, eval_genome)
-    winner = p.run(pe.evaluate, 300)
+    winner = p.run(pe.evaluate, 150)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))
@@ -113,9 +218,25 @@ def run(config_file):
     # Show output of the most fit genome against training data.
     print('\nOutput:')
     winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
-    for xi in xor_inputs:
-        output = winner_net.activate(xi)
-        print("input {!r}, got {!r}".format(xi, output))
+
+    total_time = 5000.0
+    time_left = 5000.0
+    total_prices = 2000.0
+    prices_left = 2000.0
+    while time_left >= 0 and prices_left >= 0:
+      time_left -= 1
+      prices_left_in_percent = (prices_left * 100) / total_prices
+      time_left_in_percent = (time_left * 100) / total_time
+      time_passed_in_percent = 100 - time_left_in_percent
+
+      output = winner_net.activate((time_passed_in_percent / 100, prices_left_in_percent / 100))
+      give_out_price = output[0] > 0.7
+      prices_left -= (1 if give_out_price else 0)
+      prices_left_in_percent = (prices_left * 100) / total_prices
+
+      if time_left % 50 == 0:
+        print("time_left_in_percent: {!r} | prices_left_in_percent: {!r}".format(time_left_in_percent, prices_left_in_percent))
+
 
     node_names = {-1:'A', -2: 'B', 0:'A XOR B'}
     visualize.draw_net(config, winner, True, node_names = node_names)
