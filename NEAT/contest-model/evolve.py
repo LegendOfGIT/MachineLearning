@@ -19,138 +19,114 @@ from __future__ import print_function
 import math
 import os
 import time
+import matplotlib.pyplot as plt
+import numpy as np
 
 import neat
 
 import visualize
 
-# 2-input XOR inputs and expected outputs.
-xor_inputs = [
-              (0.10, 0.10),
-              (0.20, 0.10),
-              (0.30, 0.10),
-              (0.40, 0.10),
-              (0.50, 0.10),
-              (0.60, 0.10),
-              (0.70, 0.10),
-              (0.80, 0.10),
-              (0.90, 0.10),
-              (1.00, 0.10),
+TOTAL_PRICES = 1000.0
+TOTAL_TIME = 1500.0
 
-              (0.10, 0.40),
-              (0.20, 0.40),
-              (0.30, 0.40),
-              (0.40, 0.40),
-              (0.50, 0.40),
-              (0.60, 0.40),
-              (0.70, 0.40),
-              (0.80, 0.40),
-              (0.90, 0.40),
-              (1.00, 0.40),
+def get_percentage(current_amount, total_amount):
+  if total_amount == 0:
+    return 100
 
-              (0.10, 0.70),
-              (0.20, 0.70),
-              (0.30, 0.70),
-              (0.40, 0.70),
-              (0.50, 0.70),
-              (0.60, 0.70),
-              (0.70, 0.70),
-              (0.80, 0.70),
-              (0.90, 0.70),
-              (1.00, 0.70),
+  return (current_amount * 100) / total_amount
 
-              (0.10, 0.90),
-              (0.20, 0.90),
-              (0.30, 0.90),
-              (0.40, 0.90),
-              (0.50, 0.90),
-              (0.60, 0.90),
-              (0.70, 0.90),
-              (0.80, 0.90),
-              (0.90, 0.90),
-              (1.00, 0.90),
-
-              (0.10, 0.95),
-              (0.20, 0.95),
-              (0.30, 0.95),
-              (0.40, 0.95),
-              (0.50, 0.95),
-              (0.60, 0.95),
-              (0.70, 0.95),
-              (0.80, 0.95),
-              (0.90, 0.95),
-              (1.00, 0.95)
-              ]
-xor_outputs = [
-               (0.0,),
-               (1.0,),
-               (1.0,),
-               (0.0,)
-               ]
-
-def get_phase_penalty(time_left_in_percent, prices_left_in_percent):
+def get_area_reward(time_left_in_percent, prices_left_in_percent):
     prices_won_in_percent = 100.0 - prices_left_in_percent
 
-    penalty = 25.0
+    no_multiplier = 0.2
+    reward_multiplier = 1000
 
-    if time_left_in_percent >= 93.2:
+    if time_left_in_percent <= 98.0 and time_left_in_percent >= 92.2:
+      if prices_left_in_percent >= 95.0:
+        return no_multiplier
+
+      if prices_left_in_percent <= 92.2:
+        return no_multiplier
+
+      return reward_multiplier
+
+    if time_left_in_percent <= 92.0 and time_left_in_percent >= 88.2:
+      if prices_left_in_percent >= 90.0:
+        return no_multiplier
+
       if prices_left_in_percent <= 85.2:
-        return penalty
+        return no_multiplier
 
+      return reward_multiplier
+
+    if time_left_in_percent <= 56.0 and time_left_in_percent >= 49.5:
+      if prices_left_in_percent >= 70.9:
+        return no_multiplier
+
+      if prices_left_in_percent <= 62.6:
+        return no_multiplier
+
+      return reward_multiplier
+
+    if time_left_in_percent <= 39.5 and time_left_in_percent >= 42.0:
+      if prices_left_in_percent >= 55.3:
+        return no_multiplier
+
+      if prices_left_in_percent <= 48.6:
+        return no_multiplier
+
+      return reward_multiplier
+
+    if time_left_in_percent <= 26.3 and time_left_in_percent >= 24.0:
+      if prices_left_in_percent >= 43.3:
+        return no_multiplier
+
+      if prices_left_in_percent <= 39.2:
+        return no_multiplier
+
+      return reward_multiplier
+
+    if time_left_in_percent <= 10.5 and time_left_in_percent >= 8.0:
+      if prices_left_in_percent >= 20.1:
+        return no_multiplier
+
+      if prices_left_in_percent <= 12.8:
+        return no_multiplier
+
+      return reward_multiplier
+
+    if time_left_in_percent <= 4.25 and time_left_in_percent >= 2.0:
+      if prices_left_in_percent <= 8.1:
+        return no_multiplier
+
+      if prices_left_in_percent > 5.5:
+        return no_multiplier
+
+      return reward_multiplier
+
+    if time_left_in_percent <= 2.0 and time_left_in_percent >= 0.0:
+      if prices_left_in_percent <= 3.2:
+        return no_multiplier
+
+      if prices_left_in_percent > 1.2:
+        return no_multiplier
+
+      return reward_multiplier
+
+    return no_multiplier
+
+def get_price_distribution_reward(price_distribution):
+    base_multiplier = 0.5
+
+    if len(price_distribution) < 3:
       return 0
 
-    if time_left_in_percent >= 56.0:
-      if prices_left_in_percent >= 95.9:
-        return penalty
-
-      if prices_left_in_percent <= 42.6:
-        return penalty
-
+    prices_won_in_percent = get_percentage(np.count_nonzero(price_distribution), len(price_distribution))
+    if prices_won_in_percent <= 15.0 or prices_won_in_percent >= 50.0:
       return 0
 
-    if time_left_in_percent >= 39.5:
-      if prices_left_in_percent >= 74.3:
-        return penalty
+    return (50 - (prices_won_in_percent - 15.0)) * 2
 
-      if prices_left_in_percent <= 38.6:
-        return penalty
-
-      return 0
-
-    if time_left_in_percent >= 26.3:
-      if prices_left_in_percent >= 64.3:
-        return penalty
-
-      if prices_left_in_percent <= 25.2:
-        return penalty
-
-      return 0
-
-    if time_left_in_percent >= 8.5:
-      if prices_left_in_percent >= 42.1:
-        return penalty
-
-      if prices_left_in_percent <= 7.8:
-        return penalty
-
-      return 0
-
-    if time_left_in_percent >= 4.25:
-      if prices_left_in_percent <= 14.9:
-        return penalty * 2
-
-      return 0
-
-    if time_left_in_percent >= 2.0:
-      if prices_left_in_percent <= 6.9:
-        return penalty * 3
-
-      return 0
-
-      if prices_left_in_percent <= 2.0:
-        return penalty * 3.5
-
-    return 0
 
 def eval_genome(genome, config):
     """
@@ -167,32 +143,96 @@ def eval_genome(genome, config):
 
     net = neat.nn.FeedForwardNetwork.create(genome, config)
 
-    total_time = 5000.0
-    time_left = 5000.0
-    total_prices = 2000.0
-    prices_left = 2000.0
+    time_left = TOTAL_TIME
+    prices_left = TOTAL_PRICES
+    price_distribution = []
 
-    fitness = 90000.0
-    while fitness > 0 and time_left > 0 and prices_left > 0:
+    fitness = 0.0
+    while time_left > 0:
       time_left -= 1
-      prices_left_in_percent = (prices_left * 100) / total_prices
-      time_left_in_percent = (time_left * 100) / total_time
+      prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
+      time_left_in_percent = get_percentage(time_left, TOTAL_TIME)
       time_passed_in_percent = 100 - time_left_in_percent
 
-      output = net.activate((time_passed_in_percent / 100, prices_left_in_percent / 100))
+      output = net.activate((
+         time_passed_in_percent / 100,
+         prices_left_in_percent / 100,
+         get_percentage(np.count_nonzero(price_distribution), len(price_distribution)) / 100
+      ))
 
-      give_out_price = output[0] > 0.7
+      give_out_price = output[0] >= 0.6
+
+      if len(price_distribution) == 30:
+        del price_distribution[0]
+
+      price_distribution.append(1 if give_out_price else 0)
+
       prices_left -= (1 if give_out_price else 0)
-      prices_left_in_percent = (prices_left * 100) / total_prices
+      if prices_left < 0:
+        prices_left = 0
 
-      penalty = 0.0
-      penalty += get_phase_penalty(time_left_in_percent, prices_left_in_percent)
+      prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
 
-      fitness -= penalty
-
+      fitness += (
+          get_area_reward(time_left_in_percent, prices_left_in_percent) +
+          get_price_distribution_reward(price_distribution)
+      ) * time_passed_in_percent
 
     return fitness
 
+def evolute_for_x_generations(config, population, parallel_evolutor, stats, number_of_generations):
+    winner = population.run(parallel_evolutor.evaluate, number_of_generations)
+
+    # Display the winning genome.
+    print('\nBest genome:\n{!s}'.format(winner))
+
+    # Show output of the most fit genome against training data.
+    print('\nOutput:')
+    winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+
+    time_left = TOTAL_TIME
+    prices_left = TOTAL_PRICES
+
+    time_passed_history = []
+    prices_left_history = []
+    price_distribution = []
+
+    while time_left >= 0:
+      time_left -= 1
+      prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
+      time_left_in_percent = get_percentage(time_left, TOTAL_TIME)
+      time_passed_in_percent = 100 - time_left_in_percent
+
+
+      output = winner_net.activate((
+         time_passed_in_percent / 100,
+         prices_left_in_percent / 100,
+         get_percentage(np.count_nonzero(price_distribution), len(price_distribution)) / 100
+      ))
+
+      give_out_price = output[0] >= 0.6
+      if len(price_distribution) == 30:
+        del price_distribution[0]
+
+      price_distribution.append(1 if give_out_price else 0)
+
+      prices_left -= (1 if give_out_price else 0)
+      if prices_left < 0:
+        prices_left = 0
+
+      prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
+
+      time_passed_history.append(time_passed_in_percent)
+      prices_left_history.append(prices_left)
+
+    node_names = {-1:'time_passed', -2: 'prices_left', -3: 'price_distribution', 0:'give out price'}
+    visualize.draw_net(config, winner, True, node_names = node_names)
+    #visualize.plot_stats(stats, ylog=False, view=True)
+    #visualize.plot_species(stats, view=True)
+
+    handle, = plt.plot(time_passed_history, prices_left_history, Label = len(stats.most_fit_genomes))
+
+    return handle
 
 def run(config_file):
     # Load configuration.
@@ -208,40 +248,12 @@ def run(config_file):
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
 
-    # Run for up to 150 generations.
+    plot_handles = []
     pe = neat.ParallelEvaluator(4, eval_genome)
-    winner = p.run(pe.evaluate, 150)
+    for x in range(5):
+      plot_handles.append(evolute_for_x_generations(config, p, pe, stats, 60))
 
-    # Display the winning genome.
-    print('\nBest genome:\n{!s}'.format(winner))
-
-    # Show output of the most fit genome against training data.
-    print('\nOutput:')
-    winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
-
-    total_time = 5000.0
-    time_left = 5000.0
-    total_prices = 2000.0
-    prices_left = 2000.0
-    while time_left >= 0 and prices_left >= 0:
-      time_left -= 1
-      prices_left_in_percent = (prices_left * 100) / total_prices
-      time_left_in_percent = (time_left * 100) / total_time
-      time_passed_in_percent = 100 - time_left_in_percent
-
-      output = winner_net.activate((time_passed_in_percent / 100, prices_left_in_percent / 100))
-      give_out_price = output[0] > 0.7
-      prices_left -= (1 if give_out_price else 0)
-      prices_left_in_percent = (prices_left * 100) / total_prices
-
-      if time_left % 50 == 0:
-        print("time_left_in_percent: {!r} | prices_left_in_percent: {!r}".format(time_left_in_percent, prices_left_in_percent))
-
-
-    node_names = {-1:'A', -2: 'B', 0:'A XOR B'}
-    visualize.draw_net(config, winner, True, node_names = node_names)
-    visualize.plot_stats(stats, ylog=False, view=True)
-    visualize.plot_species(stats, view=True)
+    plt.legend(handles=plot_handles)
 
 if __name__ == '__main__':
     # Determine path to configuration file. This path manipulation is
