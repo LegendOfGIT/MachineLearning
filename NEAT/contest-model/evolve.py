@@ -21,13 +21,12 @@ import os
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import regex as re
+import random
 
 import neat
 
 import visualize
-
-TOTAL_PRICES = 1000.0
-TOTAL_TIME = 1500.0
 
 def get_percentage(current_amount, total_amount):
   if total_amount == 0:
@@ -45,7 +44,7 @@ def get_area_reward(time_left_in_percent, prices_left_in_percent):
       if prices_left_in_percent >= 95.0:
         return no_multiplier
 
-      if prices_left_in_percent <= 92.2:
+      if prices_left_in_percent <= 90.2:
         return no_multiplier
 
       return reward_multiplier
@@ -54,7 +53,7 @@ def get_area_reward(time_left_in_percent, prices_left_in_percent):
       if prices_left_in_percent >= 90.0:
         return no_multiplier
 
-      if prices_left_in_percent <= 85.2:
+      if prices_left_in_percent <= 78.2:
         return no_multiplier
 
       return reward_multiplier
@@ -63,7 +62,7 @@ def get_area_reward(time_left_in_percent, prices_left_in_percent):
       if prices_left_in_percent >= 70.9:
         return no_multiplier
 
-      if prices_left_in_percent <= 62.6:
+      if prices_left_in_percent <= 57.6:
         return no_multiplier
 
       return reward_multiplier
@@ -72,28 +71,28 @@ def get_area_reward(time_left_in_percent, prices_left_in_percent):
       if prices_left_in_percent >= 55.3:
         return no_multiplier
 
-      if prices_left_in_percent <= 48.6:
+      if prices_left_in_percent <= 40.6:
         return no_multiplier
 
-      return reward_multiplier
+      return reward_multiplier * 8
 
     if time_left_in_percent <= 26.3 and time_left_in_percent >= 24.0:
       if prices_left_in_percent >= 43.3:
         return no_multiplier
 
-      if prices_left_in_percent <= 39.2:
+      if prices_left_in_percent <= 31.2:
         return no_multiplier
 
-      return reward_multiplier
+      return reward_multiplier * 8
 
     if time_left_in_percent <= 10.5 and time_left_in_percent >= 8.0:
       if prices_left_in_percent >= 20.1:
         return no_multiplier
 
-      if prices_left_in_percent <= 12.8:
+      if prices_left_in_percent <= 9.8:
         return no_multiplier
 
-      return reward_multiplier
+      return reward_multiplier * 25
 
     if time_left_in_percent <= 4.25 and time_left_in_percent >= 2.0:
       if prices_left_in_percent <= 8.1:
@@ -102,16 +101,16 @@ def get_area_reward(time_left_in_percent, prices_left_in_percent):
       if prices_left_in_percent > 5.5:
         return no_multiplier
 
-      return reward_multiplier
+      return reward_multiplier * 100
 
     if time_left_in_percent <= 2.0 and time_left_in_percent >= 0.0:
       if prices_left_in_percent <= 3.2:
         return no_multiplier
 
-      if prices_left_in_percent > 1.2:
+      if prices_left_in_percent > 0.1:
         return no_multiplier
 
-      return reward_multiplier
+      return reward_multiplier * 200
 
     return no_multiplier
 
@@ -122,10 +121,10 @@ def get_price_distribution_reward(price_distribution):
       return 0
 
     prices_won_in_percent = get_percentage(np.count_nonzero(price_distribution), len(price_distribution))
-    if prices_won_in_percent <= 15.0 or prices_won_in_percent >= 50.0:
+    if prices_won_in_percent <= 15.0 or prices_won_in_percent >= 75.0:
       return 0
 
-    return (50 - (prices_won_in_percent - 15.0)) * 2
+    return (75 - (prices_won_in_percent - 15.0)) * 25
 
 
 def eval_genome(genome, config):
@@ -147,11 +146,13 @@ def eval_genome(genome, config):
     prices_left = TOTAL_PRICES
     price_distribution = []
 
+    current_time_left_in_percent = 100
     fitness = 0.0
     while time_left > 0:
       time_left -= 1
       prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
       time_left_in_percent = get_percentage(time_left, TOTAL_TIME)
+      next_time_left_in_percent = math.floor(time_left_in_percent)
       time_passed_in_percent = 100 - time_left_in_percent
 
       output = net.activate((
@@ -160,9 +161,9 @@ def eval_genome(genome, config):
          get_percentage(np.count_nonzero(price_distribution), len(price_distribution)) / 100
       ))
 
-      give_out_price = output[0] >= 0.6
+      give_out_price = output[0] > 0.5
 
-      if len(price_distribution) == 30:
+      if len(price_distribution) == 50:
         del price_distribution[0]
 
       price_distribution.append(1 if give_out_price else 0)
@@ -173,14 +174,26 @@ def eval_genome(genome, config):
 
       prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
 
-      fitness += (
-          get_area_reward(time_left_in_percent, prices_left_in_percent) +
-          get_price_distribution_reward(price_distribution)
-      ) * time_passed_in_percent
+      if not current_time_left_in_percent == next_time_left_in_percent:
+        fitness += (
+            get_area_reward(time_left_in_percent, prices_left_in_percent) +
+            get_price_distribution_reward(price_distribution)
+        ) * time_passed_in_percent
+
+      current_time_left_in_percent = next_time_left_in_percent
+
+    fitness += (100 - prices_left_in_percent) * 1200
 
     return fitness
 
-def evolute_for_x_generations(config, population, parallel_evolutor, stats, number_of_generations):
+def evolute_for_x_generations(
+    config,
+    population,
+    parallel_evolutor,
+    stats,
+    number_of_generations,
+    current_generation
+):
     winner = population.run(parallel_evolutor.evaluate, number_of_generations)
 
     # Display the winning genome.
@@ -210,7 +223,7 @@ def evolute_for_x_generations(config, population, parallel_evolutor, stats, numb
          get_percentage(np.count_nonzero(price_distribution), len(price_distribution)) / 100
       ))
 
-      give_out_price = output[0] >= 0.6
+      give_out_price = output[0] > 0.5
       if len(price_distribution) == 30:
         del price_distribution[0]
 
@@ -230,35 +243,49 @@ def evolute_for_x_generations(config, population, parallel_evolutor, stats, numb
     #visualize.plot_stats(stats, ylog=False, view=True)
     #visualize.plot_species(stats, view=True)
 
-    handle, = plt.plot(time_passed_history, prices_left_history, Label = len(stats.most_fit_genomes))
+    print('total prices:')
+    print(TOTAL_PRICES)
+
+    print('prices left:')
+    print(prices_left)
+
+    handle, = plt.plot(time_passed_history, prices_left_history, Label = current_generation + len(stats.most_fit_genomes) + 1)
 
     return handle
 
-def run(config_file):
+def run(config_file, checkpoint_generation):
     # Load configuration.
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_file)
 
     # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Population(config)
+    if not checkpoint_generation is None:
+      p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-' + str(checkpoint_generation))
+
+      for f in os.listdir('.'):
+        if re.search('neat-checkpoint', f) and not re.search('-' + str(checkpoint_generation), f):
+          os.remove(os.path.join('.', f))
+
+    else:
+      p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(5))
 
     plot_handles = []
-    pe = neat.ParallelEvaluator(4, eval_genome)
-    for x in range(5):
-      plot_handles.append(evolute_for_x_generations(config, p, pe, stats, 60))
+    pe = neat.ParallelEvaluator(10, eval_genome)
+    for x in range(8):
+      plot_handles.append(evolute_for_x_generations(
+          config,
+          p,
+          pe,
+          stats,
+          5,
+          0 if not checkpoint_generation else checkpoint_generation
+      ))
 
     plt.legend(handles=plot_handles)
-
-if __name__ == '__main__':
-    # Determine path to configuration file. This path manipulation is
-    # here so that the script will run successfully regardless of the
-    # current working directory.
-    local_dir = os.path.dirname(os.path.abspath("__file__"))
-    config_path = os.path.join(local_dir, 'config-feedforward')
-    run(config_path)
