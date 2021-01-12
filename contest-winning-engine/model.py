@@ -13,10 +13,12 @@ def run_model(time_passed_in_percent, prices_left_in_percent, prices_give_out_te
         'neat-model.config'
     )
 
+
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Checkpointer.restore_checkpoint('neat-contest-winning-model.chk')
     pe = neat.ParallelEvaluator(6, eval_genome)
     winner = p.run(pe.evaluate, 1)
+
     net = neat.nn.FeedForwardNetwork.create(winner, config)
 
     output = net.activate((

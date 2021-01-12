@@ -2,8 +2,6 @@ FROM python:3
 
 WORKDIR /usr/src/app
 
-RUN pip install flask neat-python
+RUN pip install flask neat-python requests
 
 COPY . .
-
-CMD [ "python", "./api.py" ]
