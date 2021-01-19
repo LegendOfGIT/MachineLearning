@@ -42,7 +42,10 @@ def get_percentage(current_amount, total_amount):
 
   return (current_amount * 100) / total_amount
 
+print('Verbleibende Zeit;Verbleibende Preise;Gewinnanteil;Teilnehmer;Ausgespielte Preise;')
+
 price_distribution = []
+given_out_prices = 0
 participants_for_statistics = 0
 while minutes_left > 0:
     minutes_left -= 1
@@ -69,8 +72,10 @@ while minutes_left > 0:
         price_distribution.append(1 if give_out_price else 0)
 
         if give_out_price:
+            given_out_prices += 1
             prices_left -= 1
 
     if minutes_left % 5 == 0:
-        print("{:.2f}".format(100 - time_left_in_percent) + '%;' + "{:.2f}".format(prices_left_in_percent) + '%;' + "{:.2f}".format(price_distribution_in_percent) + '%;' + str(participants_for_statistics) + ';')
+        print("{:.2f}".format(100 - time_left_in_percent) + '%;' + "{:.2f}".format(prices_left_in_percent) + '%;' + "{:.2f}".format(price_distribution_in_percent) + '%;' + str(participants_for_statistics) + ';' + str(given_out_prices) + ';')
+        given_out_prices = 0
         participants_for_statistics = 0
