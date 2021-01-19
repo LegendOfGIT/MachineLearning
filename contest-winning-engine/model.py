@@ -1,25 +1,14 @@
+import gzip
 import neat
+import pickle
 
-def eval_genome(genome, config):
-    return 1000
+def load_net():
+    with gzip.open('contest-winning.net') as f:
+        obj = pickle.load(f)
+        return obj
 
 def run_model(time_passed_in_percent, prices_left_in_percent, prices_give_out_tendency_in_percent):
-    # Load configuration.
-    config = neat.Config(
-        neat.DefaultGenome,
-        neat.DefaultReproduction,
-        neat.DefaultSpeciesSet,
-        neat.DefaultStagnation,
-        'neat-model.config'
-    )
-
-
-    # Create the population, which is the top-level object for a NEAT run.
-    p = neat.Checkpointer.restore_checkpoint('neat-contest-winning-model.chk')
-    pe = neat.ParallelEvaluator(6, eval_genome)
-    winner = p.run(pe.evaluate, 1)
-
-    net = neat.nn.FeedForwardNetwork.create(winner, config)
+    net = load_net()
 
     output = net.activate((
         time_passed_in_percent / 100,

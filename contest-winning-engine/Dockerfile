@@ -2,6 +2,6 @@ FROM python:3
 
 WORKDIR /usr/src/app
 
-RUN pip install flask neat-python requests
+RUN pip install flask neat-python numpy requests
 
 COPY . .
