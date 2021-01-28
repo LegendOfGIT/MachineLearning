@@ -42,50 +42,60 @@ def get_area_reward(time_left_in_percent, prices_left_in_percent):
     no_multiplier = 0.2
     reward_multiplier = 1000
 
-    if time_left_in_percent <= 98.0 and time_left_in_percent >= 92.2:
+    if time_left_in_percent <= 100.0 and time_left_in_percent >= 90.0:
+      if prices_left_in_percent >= 99.0:
+        return no_multiplier
+
+      if prices_left_in_percent <= 94.2:
+        return no_multiplier
+
+      return reward_multiplier
+
+
+    if time_left_in_percent <= 92.0 and time_left_in_percent >= 88.2:
       if prices_left_in_percent >= 95.0:
         return no_multiplier
 
-      if prices_left_in_percent <= 90.2:
+      if prices_left_in_percent <= 93.2:
         return no_multiplier
 
       return reward_multiplier
 
     if time_left_in_percent <= 75.0 and time_left_in_percent >= 73.2:
-      if prices_left_in_percent >= 76.0:
+      if prices_left_in_percent >= 60.0:
         return no_multiplier
 
-      if prices_left_in_percent <= 72.2:
+      if prices_left_in_percent <= 55.2:
         return no_multiplier
 
-      return reward_multiplier * 70
+      return reward_multiplier
 
     if time_left_in_percent <= 56.0 and time_left_in_percent >= 49.5:
-      if prices_left_in_percent >= 70.9:
-        return no_multiplier
-
-      if prices_left_in_percent <= 64.6:
-        return no_multiplier
-
-      return reward_multiplier * 70
-
-    if time_left_in_percent <= 39.5 and time_left_in_percent >= 42.0:
-      if prices_left_in_percent >= 55.3:
+      if prices_left_in_percent >= 50.9:
         return no_multiplier
 
       if prices_left_in_percent <= 48.6:
         return no_multiplier
 
-      return reward_multiplier * 50
+      return reward_multiplier
 
-    if time_left_in_percent <= 26.3 and time_left_in_percent >= 24.0:
+    if time_left_in_percent <= 39.5 and time_left_in_percent >= 42.0:
       if prices_left_in_percent >= 40.3:
         return no_multiplier
 
-      if prices_left_in_percent <= 38.2:
+      if prices_left_in_percent <= 37.2:
         return no_multiplier
 
-      return reward_multiplier * 50
+      return reward_multiplier
+
+    if time_left_in_percent <= 26.3 and time_left_in_percent >= 24.0:
+      if prices_left_in_percent >= 30.3:
+        return no_multiplier
+
+      if prices_left_in_percent <= 20.2:
+        return no_multiplier
+
+      return reward_multiplier
 
     if time_left_in_percent <= 10.5 and time_left_in_percent >= 8.0:
       if prices_left_in_percent >= 15.1:
@@ -94,7 +104,7 @@ def get_area_reward(time_left_in_percent, prices_left_in_percent):
       if prices_left_in_percent <= 11.8:
         return no_multiplier
 
-      return reward_multiplier * 50
+      return reward_multiplier
 
     if time_left_in_percent <= 4.25 and time_left_in_percent >= 2.0:
       if prices_left_in_percent <= 8.1:
@@ -103,16 +113,16 @@ def get_area_reward(time_left_in_percent, prices_left_in_percent):
       if prices_left_in_percent > 5.5:
         return no_multiplier
 
-      return reward_multiplier * 100
+      return reward_multiplier
 
     if time_left_in_percent <= 2.0 and time_left_in_percent >= 0.0:
-      if prices_left_in_percent <= 4.0:
+      if prices_left_in_percent <= 2.5:
         return no_multiplier
 
-      if prices_left_in_percent > 0.5:
+      if prices_left_in_percent > 0.3:
         return no_multiplier
 
-      return reward_multiplier * 200
+      return reward_multiplier
 
     return no_multiplier
 
@@ -144,38 +154,55 @@ def eval_genome(genome, config):
 
     net = neat.nn.FeedForwardNetwork.create(genome, config)
 
-    time_left = random.randint(TOTAL_TIME_FROM, TOTAL_TIME_TO)
-    prices_left = TOTAL_PRICES
+    TOTAL_TRAINING_PRICES = random.randint(TOTAL_PRICES_FROM, TOTAL_PRICES_TO)
+    TOTAL_TRAINING_TIME = random.randint(TOTAL_TIME_FROM, TOTAL_TIME_TO)
+
+    time_left = TOTAL_TRAINING_TIME
+    prices_left = TOTAL_TRAINING_PRICES
     price_distribution = []
 
     current_time_left_in_percent = 100
     last_time_in_percent_with_prices_left = 0
     fitness = 0.0
+    minute_of_day = 0
+    distributed_participants = []
+    next_time_left_in_percent = 0
+    prices_left_in_percent = 100
+    time_left_in_percent = 100
+    time_passed_in_percent = 0
+
     while time_left > 0:
+      if minute_of_day == 0:
+        distributed_participants = get_distributed_participants_for_one_day(random.randint(TOTAL_PARTICIPANTS_FROM, TOTAL_PARTICIPANTS_TO))
+
       time_left -= 1
-      prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
-      time_left_in_percent = get_percentage(time_left, TOTAL_TIME)
-      next_time_left_in_percent = math.floor(time_left_in_percent)
-      time_passed_in_percent = 100 - time_left_in_percent
 
-      output = net.activate((
-         time_passed_in_percent / 100,
-         prices_left_in_percent / 100,
-         get_percentage(np.count_nonzero(price_distribution), len(price_distribution)) / 100
-      ))
+      for participants in range(distributed_participants[minute_of_day]):
+        prices_left_in_percent = get_percentage(prices_left, TOTAL_TRAINING_PRICES)
+        time_left_in_percent = get_percentage(time_left, TOTAL_TRAINING_TIME)
+        next_time_left_in_percent = math.floor(time_left_in_percent)
+        time_passed_in_percent = 100 - time_left_in_percent
 
-      give_out_price = output[0] > 0.5
+        output = net.activate((
+          time_passed_in_percent / 100,
+          prices_left_in_percent / 100,
+          get_percentage(np.count_nonzero(price_distribution), len(price_distribution)) / 100
+        ))
 
-      if len(price_distribution) == 50:
-        del price_distribution[0]
+        give_out_price = output[0] > 0.5
 
-      price_distribution.append(1 if give_out_price else 0)
+        if len(price_distribution) == 35:
+          del price_distribution[0]
 
-      prices_left -= (1 if give_out_price else 0)
-      if prices_left < 0:
-        prices_left = 0
+        price_distribution.append(1 if give_out_price else 0)
 
-      prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
+        prices_left -= (1 if give_out_price else 0)
+        if prices_left < 0:
+          prices_left = 0
+
+        prices_left_in_percent = get_percentage(prices_left, TOTAL_TRAINING_PRICES)
+
+
 
       if not current_time_left_in_percent == next_time_left_in_percent:
         if prices_left_in_percent > 0.0:
@@ -184,13 +211,17 @@ def eval_genome(genome, config):
         fitness += (
             get_area_reward(time_left_in_percent, prices_left_in_percent)
             #get_price_distribution_reward(price_distribution)
-        ) * time_passed_in_percent
+        ) * 30
 
       current_time_left_in_percent = next_time_left_in_percent
 
+      minute_of_day += 1
+      minute_of_day = 0 if minute_of_day == MINUTES_IN_DAY else minute_of_day
+
+
     fitness += (
-        ((100 - prices_left_in_percent) * 50) +
-        (last_time_in_percent_with_prices_left * 50)
+        ((100 - prices_left_in_percent) * 110) +
+        (last_time_in_percent_with_prices_left * 100)
     ) * 1200
 
     return fitness
@@ -222,33 +253,48 @@ def evolute_for_x_generations(
     time_passed_history = []
     prices_left_history = []
     price_distribution = []
+    minute_of_day = 0
+    distributed_participants = []
+    prices_left_in_percent = 100
+    time_left_in_percent = 100
+    time_passed_in_percent = 0
 
     while time_left >= 0:
+      if minute_of_day == 0:
+        distributed_participants = get_distributed_participants_for_one_day(random.randint(TOTAL_PARTICIPANTS_FROM, TOTAL_PARTICIPANTS_TO))
+
       time_left -= 1
-      prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
-      time_left_in_percent = get_percentage(time_left, TOTAL_TIME)
-      time_passed_in_percent = 100 - time_left_in_percent
 
-      output = winner_net.activate((
-         time_passed_in_percent / 100,
-         prices_left_in_percent / 100,
-         get_percentage(np.count_nonzero(price_distribution), len(price_distribution)) / 100
-      ))
+      for participants in range(distributed_participants[minute_of_day]):
+        prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
+        time_left_in_percent = get_percentage(time_left, TOTAL_TIME)
+        time_passed_in_percent = 100 - time_left_in_percent
 
-      give_out_price = output[0] > 0.5
-      if len(price_distribution) == 30:
-        del price_distribution[0]
+        output = winner_net.activate((
+          time_passed_in_percent / 100,
+          prices_left_in_percent / 100,
+          get_percentage(np.count_nonzero(price_distribution), len(price_distribution)) / 100
+        ))
 
-      price_distribution.append(1 if give_out_price else 0)
+        give_out_price = output[0] > 0.5
+        if len(price_distribution) == 35:
+          del price_distribution[0]
 
-      prices_left -= (1 if give_out_price else 0)
-      if prices_left < 0:
-        prices_left = 0
+        price_distribution.append(1 if give_out_price else 0)
 
-      prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
+        prices_left -= (1 if give_out_price else 0)
+        if prices_left < 0:
+          prices_left = 0
+
+        prices_left_in_percent = get_percentage(prices_left, TOTAL_PRICES)
+
 
       time_passed_history.append(time_passed_in_percent)
       prices_left_history.append(prices_left)
+
+      minute_of_day += 1
+      minute_of_day = 0 if minute_of_day == MINUTES_IN_DAY else minute_of_day
+
 
     node_names = {-1: 'time_passed', -2: 'prices_left', -3: 'price_distribution', 0:'give out price'}
     visualize.draw_net(config, winner, True, node_names = node_names)
@@ -291,17 +337,18 @@ def run(config_file, checkpoint_generation):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(5))
+    p.add_reporter(neat.Checkpointer(10))
 
     plot_handles = []
-    pe = neat.ParallelEvaluator(14, eval_genome)
+    pe = neat.ParallelEvaluator(60, eval_genome)
     for x in range(11):
+
       plot_handles.append(evolute_for_x_generations(
           config,
           p,
           pe,
           stats,
-          5,
+          10,
           0 if not checkpoint_generation else checkpoint_generation
       ))
 
