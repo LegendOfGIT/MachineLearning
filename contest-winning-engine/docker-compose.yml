@@ -1,0 +1,17 @@
+version: "2.2"
+services:
+  api:
+    image: contest-winning
+    command: python /app/api.py
+    ports:
+      - 5000:5000
+    volumes:
+      - .:/app
+    working_dir: /app
+
+  mysql:
+    image: mysql
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+    ports:
+      - 3306:3306
