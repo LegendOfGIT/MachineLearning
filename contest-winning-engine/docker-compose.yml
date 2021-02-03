@@ -3,6 +3,8 @@ services:
   api:
     image: contest-winning
     command: python /app/api.py
+    links:
+      - mysql:db
     ports:
       - 5000:5000
     volumes:
@@ -13,5 +15,6 @@ services:
     image: mysql
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+      MYSQL_DATABASE: 'contest-winning'
     ports:
       - 3306:3306
