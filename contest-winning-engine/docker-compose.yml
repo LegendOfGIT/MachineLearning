@@ -17,4 +17,4 @@ services:
       MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
       MYSQL_DATABASE: 'contest-winning'
     ports:
-      - 3306:3306
+      - 3333:3306
